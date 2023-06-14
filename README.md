@@ -8,6 +8,7 @@ email : anh.nvq214947@sis.hust.edu.vn
 Hoàng Sơn Tung :
 email :
 ## API
+https://github.com/anhnvq214947/Project-1---Group-3---Managing-Antivirus-Software/blob/633a3789643df8b09bd16f74e528c273fcffc6cc/scan%20directory
 
 ## GUI app design 
 
