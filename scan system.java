@@ -1,35 +1,25 @@
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
+import org.clamav4j.*;
 
-public class ClamAVScanner {
-    /**
-     * This function scans the system using ClamAV antivirus
-     *
-     * @return String: The result of the scan
-     */
-    public static String clamAVScanSystem() {
-        try {
-            // Run the ClamAV scan command
-            Process process = Runtime.getRuntime().exec("clamscan -r /");
+public class ClamAVExample {
+    public static void main(String[] args) throws Exception {
+        String filename = "/path/to/my/file.txt";
 
-            // Read the output of the command
-            BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
-            StringBuilder output = new StringBuilder();
-            String line;
-            while ((line = reader.readLine()) != null) {
-                output.append(line).append("\n");
-            }
+        // Create a new ClamScan instance
+        ClamScan clamScan = new ClamScan();
 
-            // Wait for the process to finish
-            int exitVal = process.waitFor();
+        // Set the path to the ClamAV daemon and virus definition database
+        clamScan.setHost("localhost");
+        clamScan.setPort(3310);
+        clamScan.setTimeout(60000);
+        clamScan.setMaxChunkSize(262144);
+        
+        // Scan the file
+        ScanResult result = clamScan.scan(filename);
 
-            // Return the output of the command
-            return output.toString();
-        } catch (IOException | InterruptedException e) {
-            // Log the error
-            System.err.println("Error: " + e.getMessage());
-            return "";
-        }
+        // Print the results
+        System.out.println("File: " + filename);
+        System.out.println("Result: " + result.getStatus());
+        System.out.println("Message: " + result.getMessage());
+        System.out.println("Virus Name: " + result.getVirusName());
     }
 }
