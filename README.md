@@ -8,6 +8,7 @@ email : anh.nvq214947@sis.hust.edu.vn
 Hoàng Sơn Tung :
 email :
 ## API
+scan directory
 
 ## GUI app design 
 
