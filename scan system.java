@@ -1,37 +1,25 @@
-import org.clamav4j.ClamScan;
-import org.clamav4j.ClamScanOptions;
-
-import java.io.File;
+import org.clamav4j.*;
 
 public class ClamAVExample {
     public static void main(String[] args) throws Exception {
-        // Khởi tạo ClamScan object
-        ClamScan clam = new ClamScan();
+        String filename = "/path/to/my/file.txt";
 
-        // Tạo đối tượng ClamScanOptions để thiết lập các tùy chọn quét virus
-        ClamScanOptions options = new ClamScanOptions();
-        options.setFilename("/path/to/clamd.sock");  // Đặt đường dẫn đến socket của ClamAV
+        // Create a new ClamScan instance
+        ClamScan clamScan = new ClamScan();
 
-        // Điều hướng đến thư mục gốc của hệ thống
-        File rootDirectory = File.listRoots()[0];
+        // Set the path to the ClamAV daemon and virus definition database
+        clamScan.setHost("localhost");
+        clamScan.setPort(3310);
+        clamScan.setTimeout(60000);
+        clamScan.setMaxChunkSize(262144);
+        
+        // Scan the file
+        ScanResult result = clamScan.scan(filename);
 
-        // Gọi phương thức quét virus cho từng file trên hệ thống
-        scan(rootDirectory, clam, options);
-    }
-
-    private static void scan(File file, ClamScan clam, ClamScanOptions options) throws Exception {
-        if (file.isDirectory()) {
-            // Nếu là thư mục, duyệt các file con bên trong
-            File[] files = file.listFiles();
-            for (File child : files) {
-                scan(child, clam, options);
-            }
-        } else {
-            // Nếu là file, quét virus và hiển thị kết quả nếu có virus
-            boolean isInfected = clam.scan(file, options);
-            if (isInfected) {
-                System.out.println("Virus detected in file: " + file.getAbsolutePath());
-            }
-        }
+        // Print the results
+        System.out.println("File: " + filename);
+        System.out.println("Result: " + result.getStatus());
+        System.out.println("Message: " + result.getMessage());
+        System.out.println("Virus Name: " + result.getVirusName());
     }
 }
