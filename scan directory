@@ -1,6 +1,12 @@
-import java.io.File;
+import com.barbarysoftware.jclamav.ClamAVClient;
+import com.barbarysoftware.jclamav.ScanResult;
 
-public class DirectoryScanner {
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+
+public class ClamAVDirectoryScanner {
     public static void main(String[] args) {
         String directoryPath = "/path/to/directory";
         File directory = new File(directoryPath);
@@ -8,14 +14,23 @@ public class DirectoryScanner {
     }
 
     public static void scanDirectory(File directory) {
-        File[] files = directory.listFiles();
-        if (files != null) {
-            for (File file : files) {
+        if (directory.isDirectory()) {
+            for (File file : directory.listFiles()) {
                 if (file.isDirectory()) {
                     scanDirectory(file); // Nếu là thư mục thì tiếp tục đệ quy vào bên trong
                 } else {
-                    // Xử lý hoặc kiểm tra tệp tin ở đây
-                    System.out.println("Found file: " + file.getAbsolutePath());
+                    try (ClamAVClient client = new ClamAVClient("localhost", 3310)) {
+                        byte[] fileBytes = Files.readAllBytes(Paths.get(file.getAbsolutePath()));
+                        ScanResult result = client.scan(fileBytes);
+
+                        if (result.isClean()) {
+                            System.out.println("Clean file: " + file.getAbsolutePath());
+                        } else {
+                            System.out.println("Infected file: " + file.getAbsolutePath() + ", virus name: " + result.getVirusName());
+                        }
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
                 }
             }
         }
