@@ -5,8 +5,8 @@ Build a program to manage a ClamAV antivirus software on Linux
 # Student information
 Nguyễn Viết Quý Anh : 20214947
 email : anh.nvq214947@sis.hust.edu.vn 
-Hoàng Sơn Tung :
-email :
+Hoàng Sơn Tung : 20214979
+email : tung.hs214979@sis.hust.edu.vn
 ## API
 
 
