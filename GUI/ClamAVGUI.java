@@ -1,19 +1,11 @@
-package GUI;
 import javax.swing.*;
 import javax.swing.filechooser.FileSystemView;
-
-import API.ClamAVService;
-import API.VirusScanResult;
-import API.VirusScanStatus;
-
 import java.awt.*;
 import java.awt.event.*;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.FileInputStream;
-
+import API.*;
 
 public class ClamAVGUI extends JFrame {
     private JLabel statusLabel;
@@ -47,53 +39,50 @@ public class ClamAVGUI extends JFrame {
             public void actionPerformed(ActionEvent e) {
                 // Display file chooser dialog
                 JFileChooser fileChooser = new JFileChooser(FileSystemView.getFileSystemView().getHomeDirectory());
-                int result = fileChooser.showOpenDialog(ClamAVGUI.this);
+                int result = fileChooser.showSaveDialog(ClamAVGUI.this);
                 if (result == JFileChooser.APPROVE_OPTION) {
                     File file = fileChooser.getSelectedFile();
                     ClamAVService clamAVService = new ClamAVService();
                     VirusScanResult scanResult = null;
                     try {
                         if (clamAVService.ping()) {
-                            try (InputStream inputStream = new FileInputStream(file)) {
-                                scanResult = clamAVService.scan(inputStream);
-                            } catch (IOException a) {
-                                scanResult = new VirusScanResult(VirusScanStatus.FAILED, a.getMessage());
+                            try {
+                                scanResult = clamAVService.scan(file);
+                            } catch (IOException ex) {
+                                scanResult = new VirusScanResult(VirusScanStatus.FAILED, ex.getMessage());
                             }
                         } else {
                             scanResult = new VirusScanResult(VirusScanStatus.CONNECTION_FAILED,
                                     "ClamAV did not respond to ping request!");
                         }
-                    } catch (Exception a) {
-                        scanResult =
-                                new VirusScanResult(VirusScanStatus.ERROR, "An error occurred while scanning file.");
+                    } catch (Exception ex) {
+                        scanResult = new VirusScanResult(VirusScanStatus.ERROR, "An error occurred while scanning file.");
                     }
 
-                    // Display the scan result in the GUI
-                    JOptionPane.showMessageDialog(ClamAVGUI.this, scanResult);
+                    // Save the scan result to the selected file
+                    String saveFilePath = file.getAbsolutePath();
+                    saveScanResultToFile(scanResult, saveFilePath);
 
-                    // Write the scan result to a file
-                    String outputFileName = "scan_result.txt";
-                    writeScanResultToFile(scanResult, outputFileName);
-                    openWithNotepad(outputFileName);
+                    // Open the saved file using the default text editor in Ubuntu
+                    try {
+                        ProcessBuilder processBuilder = new ProcessBuilder("xdg-open", saveFilePath);
+                        processBuilder.start();
+                    } catch (IOException ex) {
+                        System.out.println("Error opening file: " + ex.getMessage());
+                    }
+
+                    // Display a message dialog with the saved file path
+                    JOptionPane.showMessageDialog(ClamAVGUI.this, "Scan result saved to: " + saveFilePath);
                 }
             }
         });
     }
 
-    private void writeScanResultToFile(VirusScanResult scanResult, String fileName) {
-        try (FileWriter writer = new FileWriter(fileName)) {
+    private void saveScanResultToFile(VirusScanResult scanResult, String filePath) {
+        try (FileWriter writer = new FileWriter(filePath)) {
             writer.write(scanResult.toString());
         } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
-    private void openWithNotepad(String fileName) {
-        try {
-            ProcessBuilder pb = new ProcessBuilder("notepad.exe", fileName);
-            pb.start();
-        } catch (IOException e) {
-            e.printStackTrace();
+            System.out.println("Error saving scan result to file: " + e.getMessage());
         }
     }
 
@@ -102,4 +91,3 @@ public class ClamAVGUI extends JFrame {
         gui.setVisible(true);
     }
 }
-
