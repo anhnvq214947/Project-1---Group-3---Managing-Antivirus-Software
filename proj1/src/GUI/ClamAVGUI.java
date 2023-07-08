@@ -60,26 +60,17 @@ public class ClamAVGUI extends JFrame {
             				try (InputStream inputStream = new FileInputStream(file)) {
             					scanResult = clamAVService.scan(inputStream);
             				} catch (IOException a) {
-            					System.out.println("An error occurred while scanning file., " + a.getMessage());
             					scanResult = new VirusScanResult(VirusScanStatus.FAILED, a.getMessage());
             				}
             			} else {
-            				System.out.println("ClamAV did not respond to ping request!");
             				scanResult = new VirusScanResult(VirusScanStatus.CONNECTION_FAILED,
             						"ClamAV did not respond to ping request!");
             			}
             		} catch (Exception a) {
-            			System.out.println("An error occurred while scanning file., " + a.getMessage());
             			scanResult =
             					new VirusScanResult(VirusScanStatus.ERROR, "An error occurred while scanning file.");
             		}
-
-                    	// Scan the file with ClamAV
-
-
-                    
                     // Display the scan result in the GUI
-//                    statusLabel.setText(scResult);
                     JOptionPane.showMessageDialog(ClamAVGUI.this, scanResult);
                 }
             }
