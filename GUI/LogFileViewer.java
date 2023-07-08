@@ -1,64 +1,105 @@
+package GUI;
 import javax.swing.*;
+import javax.swing.filechooser.FileSystemView;
+
+import API.ClamAVService;
+import API.VirusScanResult;
+import API.VirusScanStatus;
+
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.io.BufferedReader;
-import java.io.FileReader;
+import java.awt.event.*;
+import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.FileInputStream;
 
-public class LogFileViewer extends JFrame {
-    private JTextArea textArea;
 
-    public LogFileViewer() {
-        setTitle("Log File Viewer");
-        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setSize(500, 400);
-        setLocationRelativeTo(null);
+public class ClamAVGUI extends JFrame {
+    private JLabel statusLabel;
+    private JProgressBar progressBar;
+    private JButton scanButton;
 
-        // Create a button to open the file
-        JButton openButton = new JButton("Open File");
-        openButton.addActionListener(new ActionListener() {
-            @Override
+    public ClamAVGUI() {
+        setTitle("ClamAV GUI");
+        setSize(400, 200);
+        setDefaultCloseOperation(EXIT_ON_CLOSE);
+        setLayout(new BorderLayout());
+
+        // Create components
+        statusLabel = new JLabel("Select a file to scan");
+        progressBar = new JProgressBar();
+        scanButton = new JButton("Scan");
+
+        // Add components to GUI
+        JPanel topPanel = new JPanel();
+        topPanel.add(statusLabel);
+
+        JPanel bottomPanel = new JPanel();
+        bottomPanel.add(scanButton);
+        bottomPanel.add(progressBar);
+
+        add(topPanel, BorderLayout.NORTH);
+        add(bottomPanel, BorderLayout.SOUTH);
+
+        // Add action listener to scan button
+        scanButton.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
-                JFileChooser fileChooser = new JFileChooser();
-                int result = fileChooser.showOpenDialog(null);
+                // Display file chooser dialog
+                JFileChooser fileChooser = new JFileChooser(FileSystemView.getFileSystemView().getHomeDirectory());
+                int result = fileChooser.showOpenDialog(ClamAVGUI.this);
                 if (result == JFileChooser.APPROVE_OPTION) {
-                    String filePath = fileChooser.getSelectedFile().getAbsolutePath();
-                    readFile(filePath);
+                    File file = fileChooser.getSelectedFile();
+                    ClamAVService clamAVService = new ClamAVService();
+                    VirusScanResult scanResult = null;
+                    try {
+                        if (clamAVService.ping()) {
+                            try (InputStream inputStream = new FileInputStream(file)) {
+                                scanResult = clamAVService.scan(inputStream);
+                            } catch (IOException a) {
+                                scanResult = new VirusScanResult(VirusScanStatus.FAILED, a.getMessage());
+                            }
+                        } else {
+                            scanResult = new VirusScanResult(VirusScanStatus.CONNECTION_FAILED,
+                                    "ClamAV did not respond to ping request!");
+                        }
+                    } catch (Exception a) {
+                        scanResult =
+                                new VirusScanResult(VirusScanStatus.ERROR, "An error occurred while scanning file.");
+                    }
+
+                    // Display the scan result in the GUI
+                    JOptionPane.showMessageDialog(ClamAVGUI.this, scanResult);
+
+                    // Write the scan result to a file
+                    String outputFileName = "scan_result.txt";
+                    writeScanResultToFile(scanResult, outputFileName);
+                    openWithNotepad(outputFileName);
                 }
             }
         });
-
-        // Create a text area to display the file contents
-        textArea = new JTextArea();
-        JScrollPane scrollPane = new JScrollPane(textArea);
-
-        // Add components to the frame
-        setLayout(new BorderLayout());
-        add(openButton, BorderLayout.NORTH);
-        add(scrollPane, BorderLayout.CENTER);
     }
 
-    private void readFile(String filePath) {
-        try (BufferedReader reader = new BufferedReader(new FileReader(filePath))) {
-            StringBuilder content = new StringBuilder();
-            String line;
-            while ((line = reader.readLine()) != null) {
-                content.append(line).append("\n");
-            }
-            textArea.setText(content.toString());
+    private void writeScanResultToFile(VirusScanResult scanResult, String fileName) {
+        try (FileWriter writer = new FileWriter(fileName)) {
+            writer.write(scanResult.toString());
         } catch (IOException e) {
             e.printStackTrace();
-            JOptionPane.showMessageDialog(this, "Error reading the file", "Error", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private void openWithNotepad(String fileName) {
+        try {
+            ProcessBuilder pb = new ProcessBuilder("notepad.exe", fileName);
+            pb.start();
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
 
     public static void main(String[] args) {
-        SwingUtilities.invokeLater(new Runnable() {
-            @Override
-            public void run() {
-                new LogFileViewer().setVisible(true);
-            }
-        });
+        ClamAVGUI gui = new ClamAVGUI();
+        gui.setVisible(true);
     }
 }
+
